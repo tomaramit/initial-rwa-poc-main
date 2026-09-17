@@ -4,7 +4,7 @@ const path = require('path');
 const baseConfig = {
   // Server configuration
   server: {
-    port: process.env.PORT || 3001,
+    port: process.env.PORT || 3002,
     host: process.env.HOST || 'localhost',
     env: process.env.NODE_ENV || 'development',
     cors: {

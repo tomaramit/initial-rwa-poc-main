@@ -4,11 +4,13 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-const { ethers } = require('ethers');
+const { requestId } = require('./middleware/logging');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+app.use(requestId);
 
 // Security middleware
 app.use(helmet());
@@ -40,46 +42,7 @@ app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/ipfs', require('./routes/ipfs'));
-
-// [amittomar]ApiTest: reads public data from the Sepolia WETH contract.
-app.get('/api/amittomarApiTest', async (req, res) => {
-  const rpcUrl = process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
-  const wethAddress = '0xdd13E55209Fd76AfE204dBda4007C227904f0a81';
-  const wethAbi = [
-    'function name() view returns (string)',
-    'function symbol() view returns (string)',
-    'function totalSupply() view returns (uint256)',
-    'function decimals() view returns (uint8)'
-  ];
-
-  try {
-    const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-    const weth = new ethers.Contract(wethAddress, wethAbi, provider);
-    const [name, symbol, totalSupply, decimals] = await Promise.all([
-      weth.name(),
-      weth.symbol(),
-      weth.totalSupply(),
-      weth.decimals()
-    ]);
-
-    const data = {
-      contract: wethAddress,
-      network: 'Sepolia',
-      name,
-      symbol,
-      totalSupply: ethers.utils.formatUnits(totalSupply, decimals)
-    };
-
-    console.log('[amittomar]ApiTest fetched contract data:', data);
-    res.json(data);
-  } catch (error) {
-    console.error('[amittomar]ApiTest failed to fetch contract data:', error.message);
-    res.status(502).json({
-      error: 'Unable to fetch contract data',
-      message: error.message
-    });
-  }
-});
+app.use('/api/amittomarApiTest', require('./routes/baseVault'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
